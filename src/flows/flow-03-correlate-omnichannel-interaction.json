@@ -1,0 +1,85 @@
+{
+  "id": "flow-03",
+  "name": "Flow-03-CorrelateOmnichannelInteraction",
+  "displayName": "Flow‑03: CorrelateOmnichannelInteraction",
+  "description": "Triggered when a new chat or email interaction arrives. Matches the interaction to an existing case using the citizen identifier and creates an Interaction record on the case timeline.",
+  "trigger": {
+    "type": "OmnichannelEvent",
+    "events": ["ChatSessionStarted", "EmailReceived"]
+  },
+  "inputs": [
+    { "name": "citizenIdentifier", "type": "string", "required": true, "description": "Phone, email, or authenticated citizen ID" },
+    { "name": "channel", "type": "string", "required": true, "description": "Chat or Email" },
+    { "name": "messageContent", "type": "string", "required": false },
+    { "name": "sessionId", "type": "string", "required": true }
+  ],
+  "steps": [
+    {
+      "stepId": "1",
+      "name": "FindExistingContact",
+      "action": "Dataverse.SearchRecords",
+      "description": "Find the citizen contact record.",
+      "parameters": {
+        "table": "contact",
+        "filter": "emailaddress1 eq '{citizenIdentifier}' or telephone1 eq '{citizenIdentifier}'"
+      },
+      "output": "contactRecord"
+    },
+    {
+      "stepId": "2",
+      "name": "FindOpenCase",
+      "action": "Dataverse.SearchRecords",
+      "description": "Find an open case linked to this citizen.",
+      "parameters": {
+        "table": "incident",
+        "filter": "customerid eq '{contactRecord.value[0].contactid}' and statecode eq 0",
+        "orderBy": "createdon desc",
+        "top": 1
+      },
+      "output": "openCase"
+    },
+    {
+      "stepId": "3",
+      "name": "GenerateInteractionSummary",
+      "action": "AzureOpenAI.ChatCompletion",
+      "description": "Generate a summary of this interaction.",
+      "parameters": {
+        "systemPrompt": "Summarise this citizen interaction in 2-3 sentences for the case timeline.",
+        "userPrompt": "Channel: {channel}. Message: {messageContent}."
+      },
+      "output": "interactionSummary"
+    },
+    {
+      "stepId": "4",
+      "name": "CreateInteractionRecord",
+      "action": "Dataverse.CreateRecord",
+      "description": "Create an Interaction record linked to the case.",
+      "parameters": {
+        "table": "ombudlens_interaction",
+        "fields": {
+          "ombudlens_case": "{openCase.value[0].incidentid}",
+          "ombudlens_channel": "{channel}",
+          "ombudlens_starttime": "@utcNow()",
+          "ombudlens_transcript": "{messageContent}",
+          "ombudlens_interactionsummary": "{interactionSummary}",
+          "ombudlens_handledbyai": true
+        }
+      },
+      "output": "interactionId"
+    },
+    {
+      "stepId": "5",
+      "name": "LinkSessionToCase",
+      "action": "DynamicsContactCenter.LinkSessionToCase",
+      "description": "Associate the live session with the matched case in Contact Center.",
+      "parameters": {
+        "sessionId": "{sessionId}",
+        "caseId": "{openCase.value[0].incidentid}"
+      }
+    }
+  ],
+  "outputs": [
+    { "name": "caseId", "type": "string", "description": "The matched case ID" },
+    { "name": "interactionId", "type": "string", "description": "The newly created interaction record ID" }
+  ]
+}

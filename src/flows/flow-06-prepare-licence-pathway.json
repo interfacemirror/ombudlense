@@ -1,0 +1,107 @@
+{
+  "id": "flow-06",
+  "name": "Flow-06-PrepareLicencePathway",
+  "displayName": "Flow‑06: PrepareLicencePathway",
+  "description": "Triggered by INT-05 (Licence/Permit Follow-up). Validates licence eligibility, creates a draft Licence/Permit record linked to the case, updates the AI case summary, and drafts an email response for the citizen.",
+  "trigger": {
+    "type": "CopilotStudio",
+    "intent": "INT-05",
+    "channels": ["Chat", "Email"]
+  },
+  "inputs": [
+    { "name": "caseId", "type": "string", "required": true },
+    { "name": "licenceType", "type": "string", "required": false },
+    { "name": "citizenEnquiry", "type": "string", "required": false }
+  ],
+  "steps": [
+    {
+      "stepId": "1",
+      "name": "GetCaseDetails",
+      "action": "Dataverse.GetRecord",
+      "description": "Retrieve the case and related approval application.",
+      "parameters": {
+        "table": "incident",
+        "id": "{caseId}",
+        "expand": ["ombudlens_approvalapplication_incident"]
+      },
+      "output": "caseRecord"
+    },
+    {
+      "stepId": "2",
+      "name": "GetCitizenDetails",
+      "action": "Dataverse.GetRecord",
+      "description": "Retrieve the citizen details.",
+      "parameters": {
+        "table": "contact",
+        "id": "{caseRecord.customerid}"
+      },
+      "output": "citizenRecord"
+    },
+    {
+      "stepId": "3",
+      "name": "ValidateLicenceEligibility",
+      "action": "Connector.CouncilLicensingSystem.CheckEligibility",
+      "description": "Check licence eligibility via the Council Licensing System integration.",
+      "parameters": {
+        "approvalId": "{caseRecord.ombudlens_approvalapplication_incident[0].ombudlens_approvalapplicationid}",
+        "licenceType": "{licenceType}"
+      },
+      "output": "eligibilityResult"
+    },
+    {
+      "stepId": "4",
+      "name": "CreateDraftLicence",
+      "action": "Dataverse.CreateRecord",
+      "description": "Create a draft Licence/Permit record.",
+      "parameters": {
+        "table": "ombudlens_licencepermit",
+        "fields": {
+          "ombudlens_licencetype": "{licenceType}",
+          "ombudlens_linkedapproval": "{caseRecord.ombudlens_approvalapplication_incident[0].ombudlens_approvalapplicationid}",
+          "ombudlens_status": 1,
+          "ombudlens_renewaleligible": "{eligibilityResult.renewalEligible}"
+        }
+      },
+      "output": "licenceRecord"
+    },
+    {
+      "stepId": "5",
+      "name": "GenerateLicencePathwaySummary",
+      "action": "AzureOpenAI.ChatCompletion",
+      "description": "Generate a summary of the licensing pathway for the case and citizen.",
+      "parameters": {
+        "systemPrompt": "You are a council licensing advisor. Explain the future licensing pathway clearly and concisely based on the eligibility result.",
+        "userPrompt": "Case: {caseRecord.ticketnumber}. Citizen: {citizenRecord.fullname}. Licence type requested: {licenceType}. Eligibility result: {eligibilityResult}."
+      },
+      "output": "licencePathwaySummary"
+    },
+    {
+      "stepId": "6",
+      "name": "UpdateCaseAISummary",
+      "action": "Dataverse.UpdateRecord",
+      "description": "Append the licence pathway summary to the case AI summary.",
+      "parameters": {
+        "table": "incident",
+        "id": "{caseId}",
+        "fields": {
+          "ombudlens_aisummary": "@concat(caseRecord.ombudlens_aisummary, '\n\nLicensing Pathway: ', licencePathwaySummary)"
+        }
+      }
+    },
+    {
+      "stepId": "7",
+      "name": "DraftAndSendEmailResponse",
+      "action": "DynamicsContactCenter.SendEmail",
+      "description": "Draft and send an email explaining the licensing steps to the citizen.",
+      "parameters": {
+        "to": "{citizenRecord.emailaddress1}",
+        "subject": "Licensing Pathway for Your Application — Case {caseRecord.ticketnumber}",
+        "body": "{licencePathwaySummary}"
+      }
+    }
+  ],
+  "outputs": [
+    { "name": "licenceId", "type": "string", "description": "The draft Licence/Permit record ID" },
+    { "name": "licencePathwaySummary", "type": "string", "description": "AI-generated licensing pathway summary" }
+  ]
+}

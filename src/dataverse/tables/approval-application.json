@@ -1,0 +1,74 @@
+{
+  "name": "ombudlens_approvalapplication",
+  "displayName": "Approval Application",
+  "description": "Development approval or building permit application linked to a case.",
+  "baseTable": "custom",
+  "fields": [
+    {
+      "logicalName": "ombudlens_approvalapplicationid",
+      "displayName": "Application ID",
+      "type": "UniqueIdentifier",
+      "isPrimaryKey": true,
+      "required": true
+    },
+    {
+      "logicalName": "ombudlens_applicationtype",
+      "displayName": "Application Type",
+      "type": "OptionSet",
+      "required": true,
+      "options": [
+        { "value": 1, "label": "Development Approval" },
+        { "value": 2, "label": "Building Permit" },
+        { "value": 3, "label": "Other" }
+      ]
+    },
+    {
+      "logicalName": "ombudlens_linkedcase",
+      "displayName": "Linked Case",
+      "type": "Lookup",
+      "target": "incident",
+      "required": true
+    },
+    {
+      "logicalName": "ombudlens_submissiondate",
+      "displayName": "Submission Date",
+      "type": "DateOnly",
+      "required": false
+    },
+    {
+      "logicalName": "ombudlens_assessmentstatus",
+      "displayName": "Assessment Status",
+      "type": "OptionSet",
+      "required": true,
+      "options": [
+        { "value": 1, "label": "Submitted" },
+        { "value": 2, "label": "Under Assessment" },
+        { "value": 3, "label": "Approved" },
+        { "value": 4, "label": "Rejected" }
+      ]
+    },
+    {
+      "logicalName": "ombudlens_decisionoutcome",
+      "displayName": "Decision Outcome",
+      "type": "OptionSet",
+      "required": false,
+      "options": [
+        { "value": 1, "label": "Approved" },
+        { "value": 2, "label": "Conditional Approval" },
+        { "value": 3, "label": "Rejected" }
+      ]
+    },
+    {
+      "logicalName": "ombudlens_decisiondate",
+      "displayName": "Decision Date",
+      "type": "DateOnly",
+      "required": false
+    },
+    {
+      "logicalName": "ombudlens_slatarget",
+      "displayName": "SLA Target",
+      "type": "DateTime",
+      "required": false
+    }
+  ]
+}

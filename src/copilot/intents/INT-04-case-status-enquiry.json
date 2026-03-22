@@ -1,0 +1,50 @@
+{
+  "id": "INT-04",
+  "name": "CaseStatusEnquiry",
+  "displayName": "INT‑04: Case Status Enquiry",
+  "description": "Handles citizen requests to check the status or progress of an existing case or application.",
+  "triggerPhrases": [
+    "What's the status of my case",
+    "Can I get an update on my application",
+    "How is my application going",
+    "What's happening with my request",
+    "Has there been any progress",
+    "How long will this take",
+    "When will I hear back",
+    "What's the timeline for my application",
+    "Can you check my case",
+    "I want to know the status of my case"
+  ],
+  "entities": [
+    {
+      "name": "caseNumber",
+      "type": "String",
+      "required": false,
+      "prompt": "Do you have your case reference number?"
+    },
+    {
+      "name": "citizenEmail",
+      "type": "String",
+      "required": false,
+      "prompt": "Could I have the email address you used when you first contacted us?"
+    }
+  ],
+  "actions": [
+    {
+      "actionType": "DataverseLookup",
+      "description": "Look up the case status directly from Dataverse using the case number or citizen email.",
+      "parameters": {
+        "table": "incident",
+        "lookupFields": ["ticketnumber"],
+        "lookupViaCustomer": ["emailaddress1"],
+        "note": "ticketnumber is looked up directly on incident; emailaddress1 is looked up by joining to the customerid (contact) record.",
+        "returnFields": ["ticketnumber", "ombudlens_substatus", "statecode", "ombudlens_aisummary", "ombudlens_sladuedate"]
+      },
+      "output": "caseStatus"
+    }
+  ],
+  "responseTemplate": "Your case {caseNumber} is currently {caseStatus.ombudlens_substatus}. {caseStatus.ombudlens_aisummary}. The expected completion date is {caseStatus.ombudlens_sladuedate}.",
+  "confirmationMessage": "I've pulled up the latest status for your case.",
+  "fallbackMessage": "I wasn't able to find a case matching those details. Would you like to speak with an officer?",
+  "linkedFlows": []
+}

@@ -1,0 +1,49 @@
+{
+  "id": "INT-05",
+  "name": "LicencePermitFollowUp",
+  "displayName": "INT‑05: Licence / Permit Follow‑up",
+  "description": "Handles post-approval enquiries about converting a development approval into a licence or permit, including rental licence eligibility.",
+  "triggerPhrases": [
+    "Can I get a licence after approval",
+    "Can this approval be used for a rental licence",
+    "How do I get a permit after the approval",
+    "Can I rent out my granny flat",
+    "What happens after my development approval",
+    "I want to convert my approval to a licence",
+    "Can this become a licence",
+    "Do I need a rental licence",
+    "How do I get a rental permit",
+    "What licences do I need after building"
+  ],
+  "entities": [
+    {
+      "name": "caseNumber",
+      "type": "String",
+      "required": false,
+      "prompt": "Do you have your case or application reference number?"
+    },
+    {
+      "name": "licenceType",
+      "type": "OptionSet",
+      "required": false,
+      "prompt": "What type of licence are you enquiring about?",
+      "options": ["Rental Licence", "Building Licence", "Development Licence", "Other"]
+    },
+    {
+      "name": "intendedUse",
+      "type": "String",
+      "required": false,
+      "prompt": "Could you tell me more about what you intend to use the licence for?"
+    }
+  ],
+  "actions": [
+    {
+      "actionType": "TriggerFlow",
+      "flowId": "flow-06",
+      "description": "Trigger Flow-06 to validate eligibility, create a draft licence record, and draft a response."
+    }
+  ],
+  "confirmationMessage": "I've checked the licensing pathway for your application. I'll send you an email with the details shortly.",
+  "fallbackMessage": "I can look into the licensing options for you. Could you share your case number or the address of the property?",
+  "linkedFlows": ["flow-06"]
+}

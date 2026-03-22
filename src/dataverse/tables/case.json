@@ -1,0 +1,135 @@
+{
+  "name": "ombudlens_case",
+  "displayName": "Case",
+  "description": "Extends the standard Dynamics 365 Incident (Case) table with council-specific fields.",
+  "baseTable": "incident",
+  "fields": [
+    {
+      "logicalName": "incidentid",
+      "displayName": "Case ID",
+      "type": "UniqueIdentifier",
+      "isPrimaryKey": true,
+      "required": true
+    },
+    {
+      "logicalName": "ticketnumber",
+      "displayName": "Case Number",
+      "type": "String",
+      "maxLength": 100,
+      "required": true,
+      "autoNumber": "ABC-{SEQNUM:5}"
+    },
+    {
+      "logicalName": "ombudlens_casetype",
+      "displayName": "Case Type",
+      "type": "OptionSet",
+      "required": true,
+      "options": [
+        { "value": 1, "label": "Development" },
+        { "value": 2, "label": "Licensing" },
+        { "value": 3, "label": "Enquiry" }
+      ]
+    },
+    {
+      "logicalName": "ombudlens_category",
+      "displayName": "Category",
+      "type": "OptionSet",
+      "required": false,
+      "options": [
+        { "value": 1, "label": "Granny Flat" },
+        { "value": 2, "label": "Extension" },
+        { "value": 3, "label": "Permit" },
+        { "value": 4, "label": "Other" }
+      ]
+    },
+    {
+      "logicalName": "statecode",
+      "displayName": "Status",
+      "type": "State",
+      "required": true,
+      "options": [
+        { "value": 0, "label": "Open" },
+        { "value": 1, "label": "Resolved" },
+        { "value": 2, "label": "Cancelled" }
+      ]
+    },
+    {
+      "logicalName": "ombudlens_substatus",
+      "displayName": "Sub-Status",
+      "type": "OptionSet",
+      "required": false,
+      "options": [
+        { "value": 1, "label": "Awaiting Documents" },
+        { "value": 2, "label": "Awaiting Assessment" },
+        { "value": 3, "label": "Under Review" },
+        { "value": 4, "label": "Decision Issued" }
+      ]
+    },
+    {
+      "logicalName": "prioritycode",
+      "displayName": "Priority",
+      "type": "OptionSet",
+      "required": false,
+      "options": [
+        { "value": 1, "label": "Low" },
+        { "value": 2, "label": "Normal" },
+        { "value": 3, "label": "High" },
+        { "value": 4, "label": "Critical" }
+      ]
+    },
+    {
+      "logicalName": "caseorigincode",
+      "displayName": "Origin Channel",
+      "type": "OptionSet",
+      "required": false,
+      "options": [
+        { "value": 1, "label": "Phone" },
+        { "value": 2, "label": "Chat" },
+        { "value": 3, "label": "Email" }
+      ]
+    },
+    {
+      "logicalName": "createdon",
+      "displayName": "Created On",
+      "type": "DateTime",
+      "required": true,
+      "readOnly": true
+    },
+    {
+      "logicalName": "owningteam",
+      "displayName": "Assigned Queue",
+      "type": "Lookup",
+      "target": "team",
+      "required": false
+    },
+    {
+      "logicalName": "ownerid",
+      "displayName": "Assigned Agent",
+      "type": "Lookup",
+      "target": "systemuser",
+      "required": false
+    },
+    {
+      "logicalName": "ombudlens_aisummary",
+      "displayName": "AI Summary",
+      "type": "Memo",
+      "maxLength": 5000,
+      "required": false
+    },
+    {
+      "logicalName": "ombudlens_sentimentscore",
+      "displayName": "Sentiment Score",
+      "type": "Decimal",
+      "minValue": -1.0,
+      "maxValue": 1.0,
+      "precision": 2,
+      "required": false
+    },
+    {
+      "logicalName": "ombudlens_sladuedate",
+      "displayName": "SLA Due Date",
+      "type": "DateTime",
+      "required": false
+    }
+  ]
+}

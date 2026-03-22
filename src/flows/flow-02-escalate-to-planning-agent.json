@@ -1,0 +1,86 @@
+{
+  "id": "flow-02",
+  "name": "Flow-02-EscalateToPlanningAgent",
+  "displayName": "Flow‑02: EscalateToPlanningAgent",
+  "description": "Triggered by INT-02 (Fast-Track/Escalation) or when sentiment score falls below threshold. Routes the case to the Planning Officer queue and prepares Copilot context for the agent.",
+  "trigger": {
+    "type": "MultiTrigger",
+    "triggers": [
+      { "type": "CopilotStudio", "intent": "INT-02", "channels": ["AIVoice", "Chat", "Email"] },
+      { "type": "Condition", "condition": "sentimentScore lt -0.3" }
+    ]
+  },
+  "inputs": [
+    { "name": "caseId", "type": "string", "required": true },
+    { "name": "sentimentScore", "type": "decimal", "required": false },
+    { "name": "escalationReason", "type": "string", "required": false }
+  ],
+  "steps": [
+    {
+      "stepId": "1",
+      "name": "GetCaseDetails",
+      "action": "Dataverse.GetRecord",
+      "description": "Retrieve the current case record.",
+      "parameters": {
+        "table": "incident",
+        "id": "{caseId}"
+      },
+      "output": "caseRecord"
+    },
+    {
+      "stepId": "2",
+      "name": "GetCitizenDetails",
+      "action": "Dataverse.GetRecord",
+      "description": "Retrieve the citizen contact record linked to the case.",
+      "parameters": {
+        "table": "contact",
+        "id": "{caseRecord.customerid}"
+      },
+      "output": "citizenRecord"
+    },
+    {
+      "stepId": "3",
+      "name": "PrepareCopilotBriefing",
+      "action": "AzureOpenAI.ChatCompletion",
+      "description": "Generate an agent briefing using Copilot.",
+      "parameters": {
+        "systemPrompt": "You are a planning officer assistant. Prepare a concise briefing for the agent including case summary, citizen details, and relevant policy considerations.",
+        "userPrompt": "Case: {caseRecord.ticketnumber}. Citizen: {citizenRecord.fullname}. Summary: {caseRecord.ombudlens_aisummary}. Escalation reason: {escalationReason}. Sentiment: {sentimentScore}."
+      },
+      "output": "agentBriefing"
+    },
+    {
+      "stepId": "4",
+      "name": "UpdateCaseWithBriefing",
+      "action": "Dataverse.UpdateRecord",
+      "description": "Update the case AI summary with the agent briefing.",
+      "parameters": {
+        "table": "incident",
+        "id": "{caseId}",
+        "fields": {
+          "ombudlens_aisummary": "{agentBriefing}",
+          "ombudlens_substatus": 3,
+          "ombudlens_sentimentscore": "{sentimentScore}"
+        }
+      }
+    },
+    {
+      "stepId": "5",
+      "name": "RouteToQueue",
+      "action": "DynamicsContactCenter.RouteToQueue",
+      "description": "Route the active conversation/case to the Planning Officer queue.",
+      "parameters": {
+        "queueName": "Planning Officer Queue",
+        "caseId": "{caseId}",
+        "context": {
+          "agentBriefing": "{agentBriefing}",
+          "priority": "High"
+        }
+      },
+      "output": "assignedAgentId"
+    }
+  ],
+  "outputs": [
+    { "name": "assignedAgentId", "type": "string", "description": "System User ID of the assigned planning agent" }
+  ]
+}

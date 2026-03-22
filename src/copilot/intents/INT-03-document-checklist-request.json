@@ -1,0 +1,43 @@
+{
+  "id": "INT-03",
+  "name": "DocumentChecklistRequest",
+  "displayName": "INT‑03: Document Checklist Request",
+  "description": "Handles citizen requests for the list of documents required to submit or progress a development or licensing application.",
+  "triggerPhrases": [
+    "What documents do I need",
+    "What forms do I need to fill in",
+    "Can I get a checklist",
+    "What do I need to submit",
+    "What paperwork is required",
+    "I need the forms for my application",
+    "What supporting documents are required",
+    "What evidence do I need to provide",
+    "Can you send me the requirements",
+    "What do I need for my development application"
+  ],
+  "entities": [
+    {
+      "name": "caseNumber",
+      "type": "String",
+      "required": false,
+      "prompt": "Do you have a case reference number? If so, I can send you a personalised checklist."
+    },
+    {
+      "name": "applicationType",
+      "type": "OptionSet",
+      "required": false,
+      "prompt": "What type of application is this for?",
+      "options": ["Development Approval", "Building Permit", "Licence", "Other"]
+    }
+  ],
+  "actions": [
+    {
+      "actionType": "TriggerFlow",
+      "flowId": "flow-04",
+      "description": "Trigger Flow-04 to retrieve and send the document checklist."
+    }
+  ],
+  "confirmationMessage": "I've sent you the document checklist. You should receive it shortly via your preferred contact method.",
+  "fallbackMessage": "I can send you the standard document checklist. Which type of application is this for?",
+  "linkedFlows": ["flow-04"]
+}

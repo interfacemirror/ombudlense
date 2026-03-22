@@ -1,0 +1,55 @@
+{
+  "id": "INT-01",
+  "name": "DevelopmentApprovalEnquiry",
+  "displayName": "INT‑01: Development Approval Enquiry",
+  "description": "Handles citizen enquiries about development approvals, building permits, and property works such as granny flats and extensions.",
+  "triggerPhrases": [
+    "I want to build a granny flat",
+    "I'd like to build an extension",
+    "How do I get a development approval",
+    "I want to add a room to my house",
+    "Can I build on my property",
+    "What do I need to build a secondary dwelling",
+    "I want to submit a development application",
+    "How do I get a building permit",
+    "I want to renovate my home",
+    "I need council approval to build"
+  ],
+  "entities": [
+    {
+      "name": "propertyAddress",
+      "type": "String",
+      "required": true,
+      "prompt": "What is the address of the property where you would like to build?"
+    },
+    {
+      "name": "suburb",
+      "type": "String",
+      "required": true,
+      "prompt": "Which suburb is the property located in?"
+    },
+    {
+      "name": "propertyType",
+      "type": "OptionSet",
+      "required": false,
+      "prompt": "Is the property residential, commercial, or rural?",
+      "options": ["Residential", "Commercial", "Rural"]
+    },
+    {
+      "name": "workType",
+      "type": "String",
+      "required": false,
+      "prompt": "What type of work are you planning to do?"
+    }
+  ],
+  "actions": [
+    {
+      "actionType": "TriggerFlow",
+      "flowId": "flow-01",
+      "description": "Trigger Flow-01 to create or match a citizen contact and create a case."
+    }
+  ],
+  "confirmationMessage": "I've created a case for you. Your reference number is {caseNumber}. A council officer will be in touch within 2 business days.",
+  "fallbackMessage": "I'm sorry, I didn't quite understand that. Could you tell me more about what you'd like to build?",
+  "linkedFlows": ["flow-01"]
+}

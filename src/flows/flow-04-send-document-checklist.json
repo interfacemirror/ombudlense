@@ -1,0 +1,100 @@
+{
+  "id": "flow-04",
+  "name": "Flow-04-SendDocumentChecklist",
+  "displayName": "Flow‑04: SendDocumentChecklist",
+  "description": "Triggered by INT-03 (Document Checklist Request). Retrieves the document checklist applicable to the case and sends it to the citizen via their preferred channel.",
+  "trigger": {
+    "type": "CopilotStudio",
+    "intent": "INT-03",
+    "channels": ["AIVoice", "Chat", "Email"]
+  },
+  "inputs": [
+    { "name": "caseId", "type": "string", "required": true }
+  ],
+  "steps": [
+    {
+      "stepId": "1",
+      "name": "GetCaseDetails",
+      "action": "Dataverse.GetRecord",
+      "description": "Retrieve the case to determine category and type.",
+      "parameters": {
+        "table": "incident",
+        "id": "{caseId}"
+      },
+      "output": "caseRecord"
+    },
+    {
+      "stepId": "2",
+      "name": "GetCitizenDetails",
+      "action": "Dataverse.GetRecord",
+      "description": "Retrieve the citizen to determine preferred channel.",
+      "parameters": {
+        "table": "contact",
+        "id": "{caseRecord.customerid}"
+      },
+      "output": "citizenRecord"
+    },
+    {
+      "stepId": "3",
+      "name": "RetrieveChecklist",
+      "action": "Dataverse.SearchRecords",
+      "description": "Retrieve the document checklist for this case type and category.",
+      "parameters": {
+        "table": "ombudlens_documentchecklist",
+        "filter": "ombudlens_casetype eq {caseRecord.ombudlens_casetype} and ombudlens_category eq {caseRecord.ombudlens_category}",
+        "note": "ombudlens_casetype and ombudlens_category are integer-valued OptionSet fields; no string quoting required in OData filters."
+      },
+      "output": "checklist"
+    },
+    {
+      "stepId": "4",
+      "name": "FormatChecklist",
+      "action": "AzureOpenAI.ChatCompletion",
+      "description": "Format the checklist into a citizen-friendly message.",
+      "parameters": {
+        "systemPrompt": "Format the following document checklist as a clear, numbered list for a citizen. Keep the language simple and friendly.",
+        "userPrompt": "{checklist.value}"
+      },
+      "output": "formattedChecklist"
+    },
+    {
+      "stepId": "5",
+      "name": "SendViaPreferredChannel",
+      "action": "Condition",
+      "description": "Send the checklist via the citizen's preferred channel.",
+      "condition": "citizenRecord.ombudlens_preferredchannel",
+      "cases": [
+        {
+          "value": 1,
+          "action": "DynamicsContactCenter.SendChatMessage",
+          "parameters": { "message": "{formattedChecklist}" }
+        },
+        {
+          "value": 3,
+          "action": "DynamicsContactCenter.SendEmail",
+          "parameters": {
+            "to": "{citizenRecord.emailaddress1}",
+            "subject": "Document Checklist for Case {caseRecord.ticketnumber}",
+            "body": "{formattedChecklist}"
+          }
+        }
+      ]
+    },
+    {
+      "stepId": "6",
+      "name": "UpdateCaseSubStatus",
+      "action": "Dataverse.UpdateRecord",
+      "description": "Update the case sub-status to Awaiting Documents.",
+      "parameters": {
+        "table": "incident",
+        "id": "{caseId}",
+        "fields": {
+          "ombudlens_substatus": 1
+        }
+      }
+    }
+  ],
+  "outputs": [
+    { "name": "checklistSent", "type": "boolean", "description": "Whether the checklist was successfully sent" }
+  ]
+}

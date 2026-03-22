@@ -1,0 +1,103 @@
+{
+  "name": "ombudlens_citizen",
+  "displayName": "Citizen",
+  "description": "Extends the standard Dynamics 365 Contact table with council-specific fields.",
+  "baseTable": "contact",
+  "fields": [
+    {
+      "logicalName": "contactid",
+      "displayName": "Citizen ID",
+      "type": "UniqueIdentifier",
+      "isPrimaryKey": true,
+      "required": true
+    },
+    {
+      "logicalName": "firstname",
+      "displayName": "First Name",
+      "type": "String",
+      "maxLength": 150,
+      "required": true
+    },
+    {
+      "logicalName": "lastname",
+      "displayName": "Last Name",
+      "type": "String",
+      "maxLength": 150,
+      "required": true
+    },
+    {
+      "logicalName": "telephone1",
+      "displayName": "Primary Phone",
+      "type": "String",
+      "maxLength": 50,
+      "required": false
+    },
+    {
+      "logicalName": "emailaddress1",
+      "displayName": "Primary Email",
+      "type": "String",
+      "maxLength": 100,
+      "required": false
+    },
+    {
+      "logicalName": "address1_line1",
+      "displayName": "Address",
+      "type": "String",
+      "maxLength": 250,
+      "required": false
+    },
+    {
+      "logicalName": "address1_city",
+      "displayName": "Suburb",
+      "type": "String",
+      "maxLength": 80,
+      "required": false
+    },
+    {
+      "logicalName": "address1_stateorprovince",
+      "displayName": "State",
+      "type": "String",
+      "maxLength": 50,
+      "required": false,
+      "options": ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"]
+    },
+    {
+      "logicalName": "address1_postalcode",
+      "displayName": "Postcode",
+      "type": "String",
+      "maxLength": 20,
+      "required": false
+    },
+    {
+      "logicalName": "ombudlens_preferredchannel",
+      "displayName": "Preferred Channel",
+      "type": "OptionSet",
+      "required": false,
+      "options": [
+        { "value": 1, "label": "Phone" },
+        { "value": 2, "label": "Chat" },
+        { "value": 3, "label": "Email" }
+      ]
+    },
+    {
+      "logicalName": "ombudlens_consentflag",
+      "displayName": "Consent Flag",
+      "type": "Boolean",
+      "required": true,
+      "defaultValue": false
+    },
+    {
+      "logicalName": "ombudlens_languagepreference",
+      "displayName": "Language Preference",
+      "type": "OptionSet",
+      "required": false,
+      "options": [
+        { "value": 1, "label": "English" },
+        { "value": 2, "label": "Mandarin" },
+        { "value": 3, "label": "Arabic" },
+        { "value": 4, "label": "Vietnamese" },
+        { "value": 5, "label": "Other" }
+      ]
+    }
+  ]
+}

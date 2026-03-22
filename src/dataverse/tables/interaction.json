@@ -1,0 +1,66 @@
+{
+  "name": "ombudlens_interaction",
+  "displayName": "Interaction",
+  "description": "An omnichannel interaction (phone, chat, or email) linked to a case.",
+  "baseTable": "custom",
+  "fields": [
+    {
+      "logicalName": "ombudlens_interactionid",
+      "displayName": "Interaction ID",
+      "type": "UniqueIdentifier",
+      "isPrimaryKey": true,
+      "required": true
+    },
+    {
+      "logicalName": "ombudlens_case",
+      "displayName": "Case",
+      "type": "Lookup",
+      "target": "incident",
+      "required": true
+    },
+    {
+      "logicalName": "ombudlens_channel",
+      "displayName": "Channel",
+      "type": "OptionSet",
+      "required": true,
+      "options": [
+        { "value": 1, "label": "Phone" },
+        { "value": 2, "label": "Chat" },
+        { "value": 3, "label": "Email" }
+      ]
+    },
+    {
+      "logicalName": "ombudlens_starttime",
+      "displayName": "Start Time",
+      "type": "DateTime",
+      "required": true
+    },
+    {
+      "logicalName": "ombudlens_endtime",
+      "displayName": "End Time",
+      "type": "DateTime",
+      "required": false
+    },
+    {
+      "logicalName": "ombudlens_transcript",
+      "displayName": "Transcript",
+      "type": "Memo",
+      "maxLength": 100000,
+      "required": false
+    },
+    {
+      "logicalName": "ombudlens_interactionsummary",
+      "displayName": "Interaction Summary",
+      "type": "Memo",
+      "maxLength": 5000,
+      "required": false
+    },
+    {
+      "logicalName": "ombudlens_handledbyai",
+      "displayName": "Handled by AI Flag",
+      "type": "Boolean",
+      "required": true,
+      "defaultValue": false
+    }
+  ]
+}

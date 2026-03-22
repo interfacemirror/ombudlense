@@ -1,0 +1,65 @@
+{
+  "name": "ombudlens_licencepermit",
+  "displayName": "Licence / Permit",
+  "description": "Issued licence or permit linked to an approved application.",
+  "baseTable": "custom",
+  "fields": [
+    {
+      "logicalName": "ombudlens_licencepermitid",
+      "displayName": "Licence ID",
+      "type": "UniqueIdentifier",
+      "isPrimaryKey": true,
+      "required": true
+    },
+    {
+      "logicalName": "ombudlens_licencetype",
+      "displayName": "Licence Type",
+      "type": "OptionSet",
+      "required": true,
+      "options": [
+        { "value": 1, "label": "Building" },
+        { "value": 2, "label": "Rental" },
+        { "value": 3, "label": "Development" },
+        { "value": 4, "label": "Other" }
+      ]
+    },
+    {
+      "logicalName": "ombudlens_linkedapproval",
+      "displayName": "Linked Approval",
+      "type": "Lookup",
+      "target": "ombudlens_approvalapplication",
+      "required": true
+    },
+    {
+      "logicalName": "ombudlens_issuedate",
+      "displayName": "Issue Date",
+      "type": "DateOnly",
+      "required": false
+    },
+    {
+      "logicalName": "ombudlens_expirydate",
+      "displayName": "Expiry Date",
+      "type": "DateOnly",
+      "required": false
+    },
+    {
+      "logicalName": "ombudlens_status",
+      "displayName": "Status",
+      "type": "OptionSet",
+      "required": true,
+      "options": [
+        { "value": 1, "label": "Draft" },
+        { "value": 2, "label": "Active" },
+        { "value": 3, "label": "Expired" },
+        { "value": 4, "label": "Revoked" }
+      ]
+    },
+    {
+      "logicalName": "ombudlens_renewaleligible",
+      "displayName": "Renewal Eligible",
+      "type": "Boolean",
+      "required": true,
+      "defaultValue": false
+    }
+  ]
+}

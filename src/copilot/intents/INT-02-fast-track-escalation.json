@@ -1,0 +1,52 @@
+{
+  "id": "INT-02",
+  "name": "FastTrackEscalation",
+  "displayName": "INT‑02: Fast‑Track / Escalation",
+  "description": "Handles requests to escalate a case or fast-track an approval. Also triggered automatically when sentiment score falls below the escalation threshold.",
+  "triggerPhrases": [
+    "Can I fast-track this",
+    "I need this urgently",
+    "This is urgent",
+    "Can I speak to a planning officer",
+    "I want to escalate this",
+    "This is taking too long",
+    "I need to speak to someone",
+    "Can I get a faster decision",
+    "I need to expedite my application",
+    "Can you escalate my case"
+  ],
+  "entities": [
+    {
+      "name": "caseNumber",
+      "type": "String",
+      "required": false,
+      "prompt": "Do you have a case reference number?"
+    },
+    {
+      "name": "urgencyReason",
+      "type": "String",
+      "required": false,
+      "prompt": "Could you briefly tell me why you need this to be fast-tracked?"
+    }
+  ],
+  "automaticTriggerConditions": [
+    {
+      "condition": "sentimentScore lt -0.3",
+      "description": "Auto-escalate if sentiment drops below -0.3 during any channel interaction."
+    },
+    {
+      "condition": "intentConfidence gt 0.8 and intent eq 'INT-02'",
+      "description": "Escalate if fast-track intent is identified with high confidence."
+    }
+  ],
+  "actions": [
+    {
+      "actionType": "TriggerFlow",
+      "flowId": "flow-02",
+      "description": "Trigger Flow-02 to route the case to the Planning Officer queue."
+    }
+  ],
+  "confirmationMessage": "I'm connecting you with a planning officer now. They have your case details and will be ready to assist you.",
+  "fallbackMessage": "I'll transfer you to a planning officer who can help you with your request.",
+  "linkedFlows": ["flow-02"]
+}

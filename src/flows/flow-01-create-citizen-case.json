@@ -1,0 +1,132 @@
+{
+  "id": "flow-01",
+  "name": "Flow-01-CreateCitizenCase",
+  "displayName": "Flow‑01: CreateCitizenCase",
+  "description": "Triggered by INT-01 from AI Voice or Chat. Creates or matches a Citizen (Contact) record and creates a new Case with an AI-generated summary.",
+  "trigger": {
+    "type": "CopilotStudio",
+    "intent": "INT-01",
+    "channels": ["AIVoice", "Chat"]
+  },
+  "inputs": [
+    { "name": "citizenFirstName", "type": "string", "required": true },
+    { "name": "citizenLastName", "type": "string", "required": true },
+    { "name": "citizenPhone", "type": "string", "required": false },
+    { "name": "citizenEmail", "type": "string", "required": false },
+    { "name": "propertyAddress", "type": "string", "required": true },
+    { "name": "propertySuburb", "type": "string", "required": true },
+    { "name": "propertyType", "type": "string", "required": false },
+    { "name": "originChannel", "type": "string", "required": true },
+    { "name": "enquiryDescription", "type": "string", "required": false }
+  ],
+  "steps": [
+    {
+      "stepId": "1",
+      "name": "SearchExistingContact",
+      "action": "Dataverse.SearchRecords",
+      "description": "Search for an existing Contact record matching phone or email.",
+      "parameters": {
+        "table": "contact",
+        "filter": "emailaddress1 eq '{citizenEmail}' or telephone1 eq '{citizenPhone}'"
+      },
+      "output": "existingContact"
+    },
+    {
+      "stepId": "2",
+      "name": "CreateOrMatchContact",
+      "action": "Condition",
+      "description": "If no existing contact is found, create a new one.",
+      "condition": "length(existingContact.value) eq 0",
+      "ifTrue": {
+        "action": "Dataverse.CreateRecord",
+        "parameters": {
+          "table": "contact",
+          "fields": {
+            "firstname": "{citizenFirstName}",
+            "lastname": "{citizenLastName}",
+            "telephone1": "{citizenPhone}",
+            "emailaddress1": "{citizenEmail}",
+            "ombudlens_consentflag": true
+          }
+        },
+        "output": "contactId"
+      },
+      "ifFalse": {
+        "action": "SetVariable",
+        "parameters": {
+          "name": "contactId",
+          "value": "{existingContact.value[0].contactid}"
+        }
+      }
+    },
+    {
+      "stepId": "3",
+      "name": "CreateOrMatchProperty",
+      "action": "Dataverse.UpsertRecord",
+      "description": "Create or match a Property record by address.",
+      "parameters": {
+        "table": "ombudlens_property",
+        "matchFields": ["ombudlens_address"],
+        "fields": {
+          "ombudlens_address": "{propertyAddress} {propertySuburb}",
+          "ombudlens_propertytype": "{propertyType}"
+        }
+      },
+      "output": "propertyId"
+    },
+    {
+      "stepId": "4",
+      "name": "GenerateAISummary",
+      "action": "AzureOpenAI.ChatCompletion",
+      "description": "Generate an AI summary of the citizen's enquiry.",
+      "parameters": {
+        "systemPrompt": "You are a council officer assistant. Summarise the following citizen enquiry concisely for a planning officer.",
+        "userPrompt": "Citizen {citizenFirstName} {citizenLastName} called about: {enquiryDescription}. Property: {propertyAddress}, {propertySuburb}."
+      },
+      "output": "aiSummary"
+    },
+    {
+      "stepId": "5",
+      "name": "CreateCase",
+      "action": "Dataverse.CreateRecord",
+      "description": "Create a new Case linked to the Contact.",
+      "parameters": {
+        "table": "incident",
+        "fields": {
+          "customerid": "{contactId}",
+          "ombudlens_casetype": 1,
+          "ombudlens_category": 1,
+          "caseorigincode": "{originChannel}",
+          "ombudlens_aisummary": "{aiSummary}",
+          "ombudlens_sladuedate": "@addDays(utcNow(), 10)"
+        }
+      },
+      "output": "caseId"
+    },
+    {
+      "stepId": "5b",
+      "name": "RetrieveCaseNumber",
+      "action": "Dataverse.GetRecord",
+      "description": "Retrieve the auto-generated case number (ticketnumber) from the newly created case.",
+      "parameters": {
+        "table": "incident",
+        "id": "{caseId}",
+        "select": ["ticketnumber"]
+      },
+      "output": "caseNumber"
+    },
+    {
+      "stepId": "6",
+      "name": "RespondWithCaseNumber",
+      "action": "CopilotStudio.SendResponse",
+      "description": "Return the case number to the citizen via the bot.",
+      "parameters": {
+        "message": "I've created a case for you. Your reference number is {caseNumber.ticketnumber}."
+      }
+    }
+  ],
+  "outputs": [
+    { "name": "caseId", "type": "string", "description": "Dataverse Case record ID" },
+    { "name": "caseNumber", "type": "string", "description": "Human-readable case number (e.g. ABC-12345)" }
+  ]
+}
