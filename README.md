@@ -1,4 +1,4 @@
-# MmbudLense
+# OmbudLense
 # Executive Summary
 This document is the single, authoritative solution design for the ABS Got Talent 2025 submission by Team OmbudLens. It consolidates the full use case, citizen transcript, architecture, data model, AI intent design, Power Automate flows, KPIs, dashboards, and execution plan into one end‑to‑end, build‑ready artefact. No supporting or addendum documents are required.
 # Use Case Overview
