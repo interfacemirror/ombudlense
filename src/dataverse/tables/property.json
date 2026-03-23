@@ -1,0 +1,65 @@
+{
+  "name": "ombudlens_property",
+  "displayName": "Property",
+  "description": "Council property with zoning, heritage, and risk information.",
+  "baseTable": "custom",
+  "fields": [
+    {
+      "logicalName": "ombudlens_propertyid",
+      "displayName": "Property ID",
+      "type": "UniqueIdentifier",
+      "isPrimaryKey": true,
+      "required": true
+    },
+    {
+      "logicalName": "ombudlens_address",
+      "displayName": "Address",
+      "type": "String",
+      "maxLength": 250,
+      "required": true
+    },
+    {
+      "logicalName": "ombudlens_lotplannumber",
+      "displayName": "Lot / Plan Number",
+      "type": "String",
+      "maxLength": 100,
+      "required": false
+    },
+    {
+      "logicalName": "ombudlens_propertytype",
+      "displayName": "Property Type",
+      "type": "OptionSet",
+      "required": false,
+      "options": [
+        { "value": 1, "label": "Residential" },
+        { "value": 2, "label": "Commercial" },
+        { "value": 3, "label": "Rural" }
+      ]
+    },
+    {
+      "logicalName": "ombudlens_councilzone",
+      "displayName": "Council Zone",
+      "type": "String",
+      "maxLength": 50,
+      "required": false
+    },
+    {
+      "logicalName": "ombudlens_riskcategory",
+      "displayName": "Risk Category",
+      "type": "OptionSet",
+      "required": false,
+      "options": [
+        { "value": 1, "label": "Low" },
+        { "value": 2, "label": "Medium" },
+        { "value": 3, "label": "High" }
+      ]
+    },
+    {
+      "logicalName": "ombudlens_heritageflag",
+      "displayName": "Heritage Flag",
+      "type": "Boolean",
+      "required": true,
+      "defaultValue": false
+    }
+  ]
+}

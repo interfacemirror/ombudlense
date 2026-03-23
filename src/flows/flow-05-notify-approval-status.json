@@ -1,0 +1,90 @@
+{
+  "id": "flow-05",
+  "name": "Flow-05-NotifyApprovalStatus",
+  "displayName": "Flow‑05: NotifyApprovalStatus",
+  "description": "Triggered when an Approval Application status is updated by council staff. Updates the linked Case and notifies the citizen via their preferred channel.",
+  "trigger": {
+    "type": "Dataverse.RecordUpdated",
+    "table": "ombudlens_approvalapplication",
+    "fields": ["ombudlens_assessmentstatus", "ombudlens_decisionoutcome"]
+  },
+  "inputs": [
+    { "name": "applicationId", "type": "string", "required": true },
+    { "name": "newStatus", "type": "string", "required": true },
+    { "name": "decisionOutcome", "type": "string", "required": false }
+  ],
+  "steps": [
+    {
+      "stepId": "1",
+      "name": "GetApplicationDetails",
+      "action": "Dataverse.GetRecord",
+      "description": "Retrieve the approval application record.",
+      "parameters": {
+        "table": "ombudlens_approvalapplication",
+        "id": "{applicationId}"
+      },
+      "output": "applicationRecord"
+    },
+    {
+      "stepId": "2",
+      "name": "GetLinkedCase",
+      "action": "Dataverse.GetRecord",
+      "description": "Retrieve the case linked to the application.",
+      "parameters": {
+        "table": "incident",
+        "id": "{applicationRecord.ombudlens_linkedcase}"
+      },
+      "output": "caseRecord"
+    },
+    {
+      "stepId": "3",
+      "name": "GetCitizenDetails",
+      "action": "Dataverse.GetRecord",
+      "description": "Retrieve the citizen details.",
+      "parameters": {
+        "table": "contact",
+        "id": "{caseRecord.customerid}"
+      },
+      "output": "citizenRecord"
+    },
+    {
+      "stepId": "4",
+      "name": "GenerateStatusNotification",
+      "action": "AzureOpenAI.ChatCompletion",
+      "description": "Draft a citizen-friendly status notification.",
+      "parameters": {
+        "systemPrompt": "Draft a professional but friendly notification to a citizen about their development application status update. Keep it to 3-4 sentences.",
+        "userPrompt": "Citizen name: {citizenRecord.fullname}. Case: {caseRecord.ticketnumber}. Application type: {applicationRecord.ombudlens_applicationtype}. New status: {newStatus}. Decision outcome: {decisionOutcome}."
+      },
+      "output": "notificationMessage"
+    },
+    {
+      "stepId": "5",
+      "name": "UpdateCaseStatus",
+      "action": "Dataverse.UpdateRecord",
+      "description": "Update the case sub-status to Decision Issued.",
+      "parameters": {
+        "table": "incident",
+        "id": "{caseRecord.incidentid}",
+        "fields": {
+          "ombudlens_substatus": 4,
+          "ombudlens_aisummary": "@concat(caseRecord.ombudlens_aisummary, '\n\nDecision Update: ', notificationMessage)"
+        }
+      }
+    },
+    {
+      "stepId": "6",
+      "name": "SendNotificationToEmail",
+      "action": "DynamicsContactCenter.SendEmail",
+      "description": "Send status notification email to the citizen.",
+      "parameters": {
+        "to": "{citizenRecord.emailaddress1}",
+        "subject": "Update on Your Application — Case {caseRecord.ticketnumber}",
+        "body": "{notificationMessage}"
+      }
+    }
+  ],
+  "outputs": [
+    { "name": "notificationSent", "type": "boolean", "description": "Whether the notification was successfully sent" }
+  ]
+}
