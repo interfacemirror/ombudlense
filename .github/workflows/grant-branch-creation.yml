@@ -1,0 +1,102 @@
+name: Grant Branch Creation to All Team Members
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+# administration: write is required to manage rulesets and collaborators.
+# If the repository's "Workflow permissions" setting is read-only this workflow
+# will still fail to start.  Fix that by going to:
+#   Settings → Actions → General → Workflow permissions → Read and write permissions
+# OR store a personal-access-token (classic, repo scope) as a repository secret
+# named ADMIN_TOKEN and it will be used automatically instead.
+permissions:
+  administration: write
+  contents: read
+
+jobs:
+  grant-branch-creation:
+    name: Add collaborators and remove branch-creation restrictions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate token
+        env:
+          HAS_ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN != '' }}
+        run: |
+          if [ "$HAS_ADMIN_TOKEN" != "true" ]; then
+            echo "⚠ ADMIN_TOKEN secret is not set. Falling back to GITHUB_TOKEN."
+            echo "  Administrative operations (adding collaborators, editing rulesets) require"
+            echo "  either a classic PAT with 'repo' scope stored as ADMIN_TOKEN, or the"
+            echo "  repository's workflow permissions set to 'Read and write permissions'."
+            echo "  Settings → Actions → General → Workflow permissions"
+          fi
+
+      - name: Add team members as Write collaborators
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_TOKEN || github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          for USER in JinSui jbhalla86 kaungoo; do
+            echo "Inviting ${USER} with write (push) access…"
+            gh api \
+              --method PUT \
+              -H "Accept: application/vnd.github+json" \
+              "/repos/${REPO}/collaborators/${USER}" \
+              -f permission=push \
+              && echo "✓ ${USER} invited/updated" \
+              || echo "⚠ Could not add ${USER} – check token permissions"
+          done
+
+      - name: Remove 'creation' rules from any blocking rulesets
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_TOKEN || github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          RULESETS=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${REPO}/rulesets" 2>/dev/null || echo "[]")
+
+          echo "$RULESETS" | jq -r '.[].id' | while read -r RULESET_ID; do
+            DETAIL=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              "/repos/${REPO}/rulesets/${RULESET_ID}")
+
+            NAME=$(echo "$DETAIL" | jq -r '.name')
+            HAS_CREATION=$(echo "$DETAIL" | jq '[.rules[]?.type] | contains(["creation"]) // false')
+
+            if [ "$HAS_CREATION" = "true" ]; then
+              echo "Removing 'creation' rule from ruleset '${NAME}' (id=${RULESET_ID})…"
+              UPDATED=$(echo "$DETAIL" | jq \
+                'del(.rules[] | select(.type == "creation")) |
+                 {name: .name, target: .target, enforcement: .enforcement,
+                  conditions: .conditions, bypass_actors: .bypass_actors, rules: .rules}')
+              gh api \
+                --method PUT \
+                -H "Accept: application/vnd.github+json" \
+                "/repos/${REPO}/rulesets/${RULESET_ID}" \
+                --input - <<< "$UPDATED" \
+                && echo "✓ Ruleset '${NAME}' updated" \
+                || echo "⚠ Could not update ruleset '${NAME}' – check token permissions"
+            else
+              echo "Ruleset '${NAME}' has no 'creation' restriction – skipping"
+            fi
+          done
+
+      - name: Summary
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ### Branch creation access configured
+
+          | Action | Details |
+          |--------|---------|
+          | Collaborators invited | JinSui, jbhalla86, kaungoo (Write / push access) |
+          | Ruleset fix | Any `creation` rule removed from active rulesets |
+
+          **If steps above show ⚠ warnings**, the workflow token lacks admin rights.
+          Choose one of:
+          1. Go to **Settings → Actions → General → Workflow permissions** and select **Read and write permissions**, then re-run this workflow.
+          2. Create a classic PAT with `repo` scope, store it as a repository secret named **`ADMIN_TOKEN`**, then re-run this workflow.
+          SUMMARY
