@@ -6,14 +6,18 @@ on:
     branches:
       - main
 
-# administration: write is required to manage rulesets and collaborators.
-# If the repository's "Workflow permissions" setting is read-only this workflow
-# will still fail to start.  Fix that by going to:
-#   Settings → Actions → General → Workflow permissions → Read and write permissions
-# OR store a personal-access-token (classic, repo scope) as a repository secret
-# named ADMIN_TOKEN and it will be used automatically instead.
+# ADMIN_TOKEN (a classic PAT with repo scope owned by the repo owner) is REQUIRED
+# for this workflow to succeed on a personal (user-owned) repository.
+# GitHub's GITHUB_TOKEN cannot be granted administration: write on personal repos,
+# so setting that permission in the workflow YAML causes the entire workflow to be
+# rejected with 0 jobs.  Instead we rely solely on ADMIN_TOKEN.
+#
+# To create ADMIN_TOKEN:
+#   1. Go to github.com → Settings → Developer settings → Personal access tokens (classic)
+#   2. Generate a token with the "repo" scope
+#   3. Add it as a repository secret named ADMIN_TOKEN:
+#      Settings → Secrets and variables → Actions → New repository secret
 permissions:
-  administration: write
   contents: read
 
 jobs:
@@ -27,12 +31,18 @@ jobs:
           HAS_ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN != '' }}
         run: |
           if [ "$HAS_ADMIN_TOKEN" != "true" ]; then
-            echo "⚠ ADMIN_TOKEN secret is not set. Falling back to GITHUB_TOKEN."
-            echo "  Administrative operations (adding collaborators, editing rulesets) require"
-            echo "  either a classic PAT with 'repo' scope stored as ADMIN_TOKEN, or the"
-            echo "  repository's workflow permissions set to 'Read and write permissions'."
-            echo "  Settings → Actions → General → Workflow permissions"
+            echo "::error::ADMIN_TOKEN secret is not set."
+            echo "  On a personal (user-owned) repository, GITHUB_TOKEN cannot manage"
+            echo "  collaborators or rulesets. A classic PAT with 'repo' scope is required."
+            echo ""
+            echo "  To fix:"
+            echo "  1. github.com → Settings → Developer settings → Personal access tokens (classic)"
+            echo "  2. Generate a token with the 'repo' scope"
+            echo "  3. Add it as a repository secret named ADMIN_TOKEN:"
+            echo "     Repository → Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
           fi
+          echo "✓ ADMIN_TOKEN is present"
 
       - name: Add team members as Write collaborators
         env:
@@ -94,9 +104,4 @@ jobs:
           |--------|---------|
           | Collaborators invited | JinSui, jbhalla86, kaungoo (Write / push access) |
           | Ruleset fix | Any `creation` rule removed from active rulesets |
-
-          **If steps above show ⚠ warnings**, the workflow token lacks admin rights.
-          Choose one of:
-          1. Go to **Settings → Actions → General → Workflow permissions** and select **Read and write permissions**, then re-run this workflow.
-          2. Create a classic PAT with `repo` scope, store it as a repository secret named **`ADMIN_TOKEN`**, then re-run this workflow.
           SUMMARY
